@@ -1,5 +1,6 @@
 import struct
 import binascii
+import os
 def readInt(binaryFile):
 	return struct.unpack("<I",binaryFile.read(4))[0]
 
@@ -20,8 +21,12 @@ class ProfSav(object):
 	def __init__(self,filename=None):
 		super(ProfSav, self).__init__()
 		self.out = dict()
+		print filename
 		if filename is not None:
-			self.read(filename)
+			if os.path.exists(filename):
+				self.read(filename)
+			else:
+				raise Exception("Could not read: " + filename)
 
 	def __getitem__(self,k):
 		return self.out[k]
