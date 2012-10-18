@@ -1,199 +1,218 @@
 import struct
 import binascii
 import os
-def readInt(binaryFile):
-	return struct.unpack("<I",binaryFile.read(4))[0]
 
-def readString(binaryFile,l):
-	return str(binaryFile.read(l))
+def read_int(binaryFile):
+    return struct.unpack("<I", binaryFile.read(4))[0]
 
-def writeInt(binaryFile,i):
-	data = struct.pack("<I",i) # little endian 32 bit.
-	binaryFile.write(data)
+def read_string(binaryFile, l):
+    return bytes(binaryFile.read(l))
 
-def writeString(binaryFile,s):
-	l = struct.pack("<I",len(s)) # little endian 32 bit.
-	binaryFile.write(l)
-	# print struct.pack("s",s)
-	binaryFile.write(s)
+def write_int(binaryFile, i):
+    data = struct.pack("<I", i) # little endian 32 bit.
+    binaryFile.write(data)
+
+def write_string(binaryFile, s):
+    l = struct.pack("<I",len(s)) # little endian 32 bit.
+    binaryFile.write(l)
+    # print struct.pack("s",s)
+    binaryFile.write(s)
 
 class ProfSav(object):
-	def __init__(self,filename=None):
-		super(ProfSav, self).__init__()
-		self.out = dict()
-		print filename
-		if filename is not None:
-			if os.path.exists(filename):
-				self.read(filename)
-			else:
-				raise Exception("Could not read: " + filename)
 
-	def __getitem__(self,k):
-		return self.out[k]
-	def __setitem__(self,k,v):
-		self.out[k] = v
-	def __str__(self):
-		return str(self.out)
+    def __init__(self, filename=None):
+        self.out = {}
+        if filename is not None:
+            print('Reading: %s' % filename)
+            self.read(filename)
 
-	def write(self,loc):
-		f = open(loc,"w+b")
-		writeInt(f,self.out['version'])
-		writeInt(f,self.out['achievements']['count'])
-		for achievment in self.out['achievements']['list']:
-			writeString(f,achievment['name'])
-			writeInt(f,achievment['difficulty'])
+    def __getitem__(self, k):
+        return self.out[k]
 
-		for ship in self.out['ships']:
-			writeInt(f,ship)
+    def __setitem__(self, k, v):
+        self.out[k] = v
 
-		# # Begin high scores (repeated twice)
-		for highscoreSetName in ["allScore","shipScore"]: #wtf?
-			highscoreSet = self.out['highscores'][highscoreSetName]
-			writeInt(f,highscoreSet['count'])
-			for highscoreKey in highscoreSet['keyOrder']:
-				highscoreDict = highscoreSet['instances'][highscoreKey]
-				for highscore in highscoreDict:
-					writeString(f,highscore['name'])
-					writeString(f,highscore['type'])
-					writeInt(f,highscore['score'])
-					writeInt(f,highscore['sector'])
-					writeInt(f,highscore['victory'])
-					writeInt(f,highscore['difficulty'])
-		# # End high score repeats
+    def __str__(self):
+        return str(self.out)
 
-		writeInt(f,self.out['otherscores']['defeated_ships']['best'])
-		writeInt(f,self.out['otherscores']['defeated_ships']['total'])
-		writeInt(f,self.out['otherscores']['explored_beacons']['best'])
-		writeInt(f,self.out['otherscores']['explored_beacons']['total'])
-		writeInt(f,self.out['otherscores']['scrap']['best'])
-		writeInt(f,self.out['otherscores']['scrap']['total'])
-		writeInt(f,self.out['otherscores']['crew']['best'])
-		writeInt(f,self.out['otherscores']['crew']['total'])
-		writeInt(f,self.out['otherscores']['total_games'])
-		writeInt(f,self.out['otherscores']['total_victories'])
+    def write(self, loc):
+        try:
+            f = open(loc, "w+b")
+        except:
+            print('Could not open %s to write the result' % loc)
+            exit(-1)
+        write_int(f, self.out['version'])
+        write_int(f, self.out['achievements']['count'])
+        for achievement in self.out['achievements']['list']:
+            write_string(f, achievement['name'])
+            write_int(f, achievement['difficulty'])
 
-		for skill in self.out['crew_skills']:
-			# 4 bytes (32bit int)        Skill Score (e.g. repairs, kills, etc.)
-			# 4 bytes (32bit int)        String Length (Crew member name)
-			# n bytes (string)           Crew member name
-			# 4 bytes (32bit int)        String Length (Crew member race)
-			# n bytes (string)           Crew member race (short version, e.g. "engi")
-			# 4 bytes (32bit int)        Gender (1 = Male) 
-			writeInt(f,skill['score'])
-			writeString(f,skill['name'])
-			writeString(f,skill['race'])
-			writeInt(f,skill['gender'])
+        for ship in self.out['ships']:
+            write_int(f,ship)
+
+        # # Begin high scores (repeated twice)
+        for highscore_set_name in ["allScore","shipScore"]: #wtf?
+            highscore_set = self.out['highscores'][highscore_set_name]
+            write_int(f, highscore_set['count'])
+            for highscoreKey in highscore_set['keyOrder']:
+                highscoreDict = highscore_set['instances'][highscoreKey]
+                for highscore in highscoreDict:
+                    write_string(f, highscore['name'])
+                    write_string(f, highscore['type'])
+                    write_int(f, highscore['score'])
+                    write_int(f, highscore['sector'])
+                    write_int(f, highscore['victory'])
+                    write_int(f, highscore['difficulty'])
+        # # End high score repeats
+
+        write_int(f, self.out['otherscores']['defeated_ships']['best'])
+        write_int(f, self.out['otherscores']['defeated_ships']['total'])
+        write_int(f, self.out['otherscores']['explored_beacons']['best'])
+        write_int(f, self.out['otherscores']['explored_beacons']['total'])
+        write_int(f, self.out['otherscores']['scrap']['best'])
+        write_int(f, self.out['otherscores']['scrap']['total'])
+        write_int(f, self.out['otherscores']['crew']['best'])
+        write_int(f, self.out['otherscores']['crew']['total'])
+        write_int(f, self.out['otherscores']['total_games'])
+        write_int(f, self.out['otherscores']['total_victories'])
+
+        for skill in self.out['crew_skills']:
+            # 4 bytes (32bit int)        Skill Score (e.g. repairs, kills, etc.)
+            # 4 bytes (32bit int)        String Length (Crew member name)
+            # n bytes (string)           Crew member name
+            # 4 bytes (32bit int)        String Length (Crew member race)
+            # n bytes (string)           Crew member race (short version, e.g. "engi")
+            # 4 bytes (32bit int)        Gender (1 = Male) 
+            write_int(f, skill['score'])
+            write_string(f, skill['name'])
+            write_string(f, skill['race'])
+            write_int(f, skill['gender'])
 
 
-	def read(self,loc):
-		f = open(loc,"rb")
-		# Header
-		# 4 bytes (32bit int)        Version
-		self.out['version'] = readInt(f)
-		
-		# # Achievements
-		# 4 bytes (32bit int)        Number of achievements
-		nAchievements = readInt(f)
-		self.out['achievements'] = dict()
-		self.out['achievements']['count'] = nAchievements
-		self.out['achievements']['list'] = list()
-		#  # Begin achievement unlock (repeated for each achievement unlocked -- 'Number of achievements')
-		#  4 bytes (32bit int)        String Length (Achievement name)
-		#  n bytes (char *)           Achievement name
-		#  4 bytes (32bit int)        Unknown (seems to be 0/1 a lot though ...)
-		#  # End achievement unlock
-		for x in xrange(nAchievements):
-			achievement = dict()
-			self.out['achievements']['list'] += [achievement]
-			achievement['name'] = readString(f,readInt(f))
-			achievement['difficulty'] = readInt(f)
-		
-		# # Repeated 12 times at present, indicating ship unlocks
-		# 4 bytes (32bit int)        Ship unlock (as binary)
-		self.out['ships'] = list()
-		for x in xrange(12):
-			self.out['ships'] += [readInt(f)]
-		
-		self.out['highscores'] = dict()
-		# # Begin high scores (repeated twice)
-		for setName in ['allScore','shipScore']: #wtf?
-			# 4 bytes (32bit int)        Number of high scores in this set
-			nHighScores = readInt(f)
-			highscoreSet = dict()
-			self.out['highscores'][setName] = highscoreSet
-			highscoreSet['count'] = nHighScores
-			highscoreSet['keyOrder'] = list()
-			highscoreSet['instances'] = dict()
-			
-			#   # Begin individual 'top score' (repeated once for each high score in this set)
-			#   4 bytes (32bit int)    String Length (Ship name)
-			#   n bytes (string)       Ship name
-			#   4 bytes (32bit int)    String Length (Ship Type)
-			#   n bytes (string)       Ship Type
-			#   4 bytes (32bit int)    Score
-			#   4 bytes (32bit int)    Sector (e.g. 8 = Sector 8)
-			#   4 bytes (32bit int)    Victory (1 = true; 0 = false)
-			#   4 bytes (32bit int)    Difficulty (1 = easy; 0 = normal)
-			#   # End individual top score
-			for y in xrange(nHighScores):
-				highscore = dict();
-				instanceName = highscore['name'] = readString(f,readInt(f))
-				highscore['type'] = readString(f,readInt(f))
-				highscore['score'] = readInt(f)
-				highscore['sector'] = readInt(f)
-				highscore['victory'] = readInt(f)
-				highscore['difficulty'] = readInt(f)
+    def read(self,loc):
+        try:
+            f = open(loc, "rb")
+        except:
+            print('Could not open %s for reading' % loc)
+            exit(-1)
+        # Header
+        # 4 bytes (32bit int)        Version
+        self.out['version'] = read_int(f)
 
-				if setName is "allScore":
-					instanceName = "all"
-				if not instanceName in highscoreSet['keyOrder']:
-					highscoreSet['keyOrder'] += [instanceName]
-				if not instanceName in highscoreSet['instances']:
-					highscoreSet['instances'][instanceName] = list()
-				highscoreSet['instances'][instanceName] += [highscore]
-		# # End high score repeats
-		
-		# # General/running scores
-		# 4 bytes (32bit int)        Best ships defeated in a session
-		# 4 bytes (32bit int)        Total ships defeated (all sessions)
-		# 4 bytes (32bit int)        Best beacons explored in a session
-		# 4 bytes (32bit int)        Total beacons explored (all sessions)
-		# 4 bytes (32bit int)        Best scrap collected in a session
-		# 4 bytes (32bit int)        Total scrap collected (all sessions)
-		# 4 bytes (32bit int)        Most number of crew hired in a session
-		# 4 bytes (32bit int)        Total number of crew hired (all sessions)
-		# 4 bytes (32bit int)        Total games played
-		# 4 bytes (32bit int)        Total number of victories
-		self.out['otherscores'] = dict()
-		self.out['otherscores']['defeated_ships'] = dict()
-		self.out['otherscores']['explored_beacons'] = dict()
-		self.out['otherscores']['scrap'] = dict()
-		self.out['otherscores']['crew'] = dict()
-		self.out['otherscores']['defeated_ships']['best'] = readInt(f)
-		self.out['otherscores']['defeated_ships']['total'] = readInt(f)
-		self.out['otherscores']['explored_beacons']['best'] = readInt(f)
-		self.out['otherscores']['explored_beacons']['total'] = readInt(f)
-		self.out['otherscores']['scrap']['best'] = readInt(f)
-		self.out['otherscores']['scrap']['total'] = readInt(f)
-		self.out['otherscores']['crew']['best'] = readInt(f)
-		self.out['otherscores']['crew']['total'] = readInt(f)
-		self.out['otherscores']['total_games'] = readInt(f)
-		self.out['otherscores']['total_victories'] = readInt(f)
-		
-		# # Repeated five times for Repair, Combat Kills, Pilot Evasions, Jumps Survived, Skill Masteries
-		self.out['crew_skills'] = list()
-		for skillName in ['Repair','Combat Kills','Pilot Evasions', 'Jumps Survived', 'Skill Masteries']:
-			# 4 bytes (32bit int)        Skill Score (e.g. repairs, kills, etc.)
-			# 4 bytes (32bit int)        String Length (Crew member name)
-			# n bytes (string)           Crew member name
-			# 4 bytes (32bit int)        String Length (Crew member race)
-			# n bytes (string)           Crew member race (short version, e.g. "engi")
-			# 4 bytes (32bit int)        Gender (1 = Male) 
-			skill = dict()
-			self.out['crew_skills'] += [skill]
-			skill['skillname'] = skillName
-			skill['score'] = readInt(f)
-			skill['name'] = readString(f,readInt(f))
-			skill['race'] = readString(f,readInt(f))
-			skill['gender'] = readInt(f)
-		
+        # # Achievements
+        # 4 bytes (32bit int)        Number of achievements
+        nAchievements = read_int(f)
+        self.out['achievements'] = {
+                'count': nAchievements,
+                'list': []
+            }
+        #  # Begin achievement unlock (repeated for each achievement unlocked -- 'Number of achievements')
+        #  4 bytes (32bit int)        String Length (Achievement name)
+        #  n bytes (char *)           Achievement name
+        #  4 bytes (32bit int)        Unknown (seems to be 0/1 a lot though ...)
+        #  # End achievement unlock
+        for _ in range(nAchievements):
+            achievement = {
+                    'name': read_string(f, read_int(f)),
+                    'difficulty': read_int(f),
+                }
+            self.out['achievements']['list'].append(achievement)
+
+        # # Repeated 12 times at present, indicating ship unlocks
+        # 4 bytes (32bit int)        Ship unlock (as binary)
+        self.out['ships'] = []
+        for _ in range(12):
+            self.out['ships'].append(read_int(f))
+
+        self.out['highscores'] = {}
+        # # Begin high scores (repeated twice)
+        for set_name in ['allScore','shipScore']: #wtf?
+            # 4 bytes (32bit int)        Number of high scores in this set
+            nHighScores = read_int(f)
+            highscore_set = {
+                    'count': nHighScores,
+                    'keyOrder': [],
+                    'instances':  {}
+                }
+            self.out['highscores'][set_name] = highscore_set
+
+            #   # Begin individual 'top score' (repeated once for each high score in this set)
+            #   4 bytes (32bit int)    String Length (Ship name)
+            #   n bytes (string)       Ship name
+            #   4 bytes (32bit int)    String Length (Ship Type)
+            #   n bytes (string)       Ship Type
+            #   4 bytes (32bit int)    Score
+            #   4 bytes (32bit int)    Sector (e.g. 8 = Sector 8)
+            #   4 bytes (32bit int)    Victory (1 = true; 0 = false)
+            #   4 bytes (32bit int)    Difficulty (1 = easy; 0 = normal)
+            #   # End individual top score
+            for _ in range(nHighScores):
+                highscore = {
+                        'name': read_string(f, read_int(f)),
+                        'type': read_string(f, read_int(f)),
+                        'score': read_int(f),
+                        'sector': read_int(f),
+                        'victory': read_int(f),
+                        'difficulty': read_int(f),
+                    }
+                instance_name = highscore['name']
+
+                if set_name == "allScore":
+                    instance_name = "all"
+                if not instance_name in highscore_set['keyOrder']:
+                    highscore_set['keyOrder'].append(instance_name)
+                if not instance_name in highscore_set['instances']:
+                    highscore_set['instances'][instance_name] = []
+                highscore_set['instances'][instance_name].append(highscore)
+        # # End high score repeats
+
+        # # General/running scores
+        # 4 bytes (32bit int)        Best ships defeated in a session
+        # 4 bytes (32bit int)        Total ships defeated (all sessions)
+        # 4 bytes (32bit int)        Best beacons explored in a session
+        # 4 bytes (32bit int)        Total beacons explored (all sessions)
+        # 4 bytes (32bit int)        Best scrap collected in a session
+        # 4 bytes (32bit int)        Total scrap collected (all sessions)
+        # 4 bytes (32bit int)        Most number of crew hired in a session
+        # 4 bytes (32bit int)        Total number of crew hired (all sessions)
+        # 4 bytes (32bit int)        Total games played
+        # 4 bytes (32bit int)        Total number of victories
+        self.out['otherscores'] = {
+                'defeated_ships': {
+                    'best': read_int(f),
+                    'total': read_int(f),
+                    },
+                'explored_beacons': {
+                    'best': read_int(f),
+                    'total': read_int(f),
+                    },
+                'scrap': {
+                    'best': read_int(f),
+                    'total': read_int(f),
+                    },
+                'crew': {
+                    'best': read_int(f),
+                    'total': read_int(f),
+                    },
+                'total_games': read_int(f),
+                'total_victories': read_int(f),
+            }
+
+        # # Repeated five times for Repair, Combat Kills, Pilot Evasions, Jumps Survived, Skill Masteries
+        self.out['crew_skills'] = []
+        for skillName in ['Repair','Combat Kills','Pilot Evasions', 'Jumps Survived', 'Skill Masteries']:
+            # 4 bytes (32bit int)        Skill Score (e.g. repairs, kills, etc.)
+            # 4 bytes (32bit int)        String Length (Crew member name)
+            # n bytes (string)           Crew member name
+            # 4 bytes (32bit int)        String Length (Crew member race)
+            # n bytes (string)           Crew member race (short version, e.g. "engi")
+            # 4 bytes (32bit int)        Gender (1 = Male) 
+            skill = {
+                    'skillname': skillName,
+                    'score': read_int(f),
+                    'name': read_string(f, read_int(f)),
+                    'race': read_string(f, read_int(f)),
+                    'gender': read_int(f),
+                }
+            self.out['crew_skills'].append(skill)
+
